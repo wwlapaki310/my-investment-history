@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私の投資ヒストリー 📈</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button-secondary {
+            background: #f5f5f5;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .button-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #chartContainer {
+            position: relative;
+            height: 400px;
+        }
+
+        .data-list {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .data-item:hover {
+            background: #f9f9f9;
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-info {
+            flex: 1;
+        }
+
+        .data-year {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .data-amount {
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .data-comment {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-button {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .icon-button:hover {
+            background: #e0e0e0;
+        }
+
+        .icon-button.delete {
+            color: #e74c3c;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            #chartContainer {
+                height: 300px;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 私の投資ヒストリー</h1>
+            <p class="subtitle">あなたの投資の軌跡を記録・可視化</p>
+        </header>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📝 データ入力</h2>
+                <form id="dataForm">
+                    <div class="form-group">
+                        <label for="year">年</label>
+                        <input type="number" id="year" required placeholder="例: 2024" min="1900" max="2100">
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">資産額（円）</label>
+                        <input type="number" id="amount" required placeholder="例: 1000000" min="0" step="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="comment">コメント（任意）</label>
+                        <textarea id="comment" placeholder="この年の投資方針や出来事を記録..."></textarea>
+                    </div>
+                    <button type="submit" class="button">追加</button>
+                </form>
+
+                <div class="actions">
+                    <div class="file-input-wrapper">
+                        <button class="button button-secondary" onclick="document.getElementById('importFile').click()">
+                            📥 インポート
+                        </button>
+                        <input type="file" id="importFile" accept=".json">
+                    </div>
+                    <button class="button button-secondary" onclick="exportData()">
+                        📤 エクスポート
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 資産推移グラフ</h2>
+                <div id="chartContainer">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-list">
+            <h2>📋 投資履歴一覧</h2>
+            <div id="dataList"></div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let investmentData = [];
+        let chart = null;
+
+        // ページ読み込み時にデータを復元
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            renderChart();
+            renderList();
+        });
+
+        // フォーム送信
+        document.getElementById('dataForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const year = parseInt(document.getElementById('year').value);
+            const amount = parseInt(document.getElementById('amount').value);
+            const comment = document.getElementById('comment').value;
+
+            // 既存の年があるかチェック
+            const existingIndex = investmentData.findIndex(item => item.year === year);
+            
+            if (existingIndex !== -1) {
+                if (confirm('この年のデータは既に存在します。上書きしますか?')) {
+                    investmentData[existingIndex] = { year, amount, comment };
+                } else {
+                    return;
+                }
+            } else {
+                investmentData.push({ year, amount, comment });
+            }
+
+            // 年でソート
+            investmentData.sort((a, b) => a.year - b.year);
+
+            saveData();
+            renderChart();
+            renderList();
+            
+            // フォームクリア
+            document.getElementById('dataForm').reset();
+            
+            showNotification('データを追加しました！');
+        });
+
+        // データ削除
+        function deleteData(year) {
+            if (confirm(`${year}年のデータを削除しますか?`)) {
+                investmentData = investmentData.filter(item => item.year !== year);
+                saveData();
+                renderChart();
+                renderList();
+                showNotification('データを削除しました');
+            }
+        }
+
+        // データ編集
+        function editData(year) {
+            const item = investmentData.find(item => item.year === year);
+            if (item) {
+                document.getElementById('year').value = item.year;
+                document.getElementById('amount').value = item.amount;
+                document.getElementById('comment').value = item.comment || '';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // グラフ描画
+        function renderChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            if (investmentData.length === 0) {
+                return;
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: investmentData.map(item => item.year + '年'),
+                    datasets: [{
+                        label: '資産額',
+                        data: investmentData.map(item => item.amount),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return '¥' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '¥' + (value / 10000) + '万';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // リスト描画
+        function renderList() {
+            const listContainer = document.getElementById('dataList');
+            
+            if (investmentData.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>まだデータがありません</p>
+                        <p>左のフォームからデータを追加してください</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = investmentData.map(item => `
+                <div class="data-item">
+                    <div class="data-info">
+                        <div class="data-year">${item.year}年</div>
+                        <div class="data-amount">¥${item.amount.toLocaleString()}</div>
+                        ${item.comment ? `<div class="data-comment">${item.comment}</div>` : ''}
+                    </div>
+                    <div class="data-actions">
+                        <button class="icon-button" onclick="editData(${item.year})" title="編集">✏️</button>
+                        <button class="icon-button delete" onclick="deleteData(${item.year})" title="削除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // データ保存
+        function saveData() {
+            localStorage.setItem('investmentHistory', JSON.stringify(investmentData));
+        }
+
+        // データ読み込み
+        function loadData() {
+            const saved = localStorage.getItem('investmentHistory');
+            if (saved) {
+                investmentData = JSON.parse(saved);
+            }
+        }
+
+        // データエクスポート
+        function exportData() {
+            if (investmentData.length === 0) {
+                alert('エクスポートするデータがありません');
+                return;
+            }
+
+            const dataStr = JSON.stringify(investmentData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `investment-history-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('データをエクスポートしました！');
+        }
+
+        // データインポート
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    
+                    if (!Array.isArray(importedData)) {
+                        throw new Error('Invalid data format');
+                    }
+
+                    if (confirm('現在のデータを上書きしてインポートしますか?')) {
+                        investmentData = importedData;
+                        investmentData.sort((a, b) => a.year - b.year);
+                        saveData();
+                        renderChart();
+                        renderList();
+                        showNotification('データをインポートしました！');
+                    }
+                } catch (error) {
+                    alert('ファイルの読み込みに失敗しました: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // ファイル選択をリセット
+            e.target.value = '';
+        });
+
+        // 通知表示
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
